@@ -32,98 +32,98 @@ import java.util.Set;
 
 public class SecretSharing {
 
-	private BigInteger prime;
-	private int numPieces;
-	private int minPieces;
-	private ArrayList<BigInteger> poly;
+    private BigInteger prime;
+    private int numPieces;
+    private int minPieces;
+    private ArrayList<BigInteger> poly;
 
-	public SecretSharing() {
-		this(13, 3, 5);
-	}
+    public SecretSharing() {
+        this(13, 3, 5);
+    }
 
-	public SecretSharing(int mersennePrimeIdx, int minPieces, int numPieces) {
-		this.prime = MersennePrime.get(mersennePrimeIdx);
-		this.minPieces = minPieces;
-		this.numPieces = numPieces;
-		this.poly = buildRandomPolynomial(minPieces - 1);
-	}
+    public SecretSharing(int mersennePrimeIdx, int minPieces, int numPieces) {
+        this.prime = MersennePrime.get(mersennePrimeIdx);
+        this.minPieces = minPieces;
+        this.numPieces = numPieces;
+        this.poly = buildRandomPolynomial(minPieces - 1);
+    }
 
-	public String getName() {
-		return "Shamir's secret sharing - (" + minPieces + ", " + numPieces + ") threshold scheme";
-	}
+    public String getName() {
+        return "Shamir's secret sharing - (" + minPieces + ", " + numPieces + ") threshold scheme";
+    }
 
-	public ArrayList<BigInteger> split(BigInteger secret) {
-		var tokens = new ArrayList<BigInteger>();
+    public ArrayList<BigInteger> split(BigInteger secret) {
+        var tokens = new ArrayList<BigInteger>();
 
-		for (int i = 1; i <= numPieces; ++i) {
-			tokens.add(evaluatePolynomial(poly, i).add(secret).mod(prime));
-		}
+        for (int i = 1; i <= numPieces; ++i) {
+            tokens.add(evaluatePolynomial(poly, i).add(secret).mod(prime));
+        }
 
-		return tokens;
-	}
+        return tokens;
+    }
 
-	private ArrayList<BigInteger> buildRandomPolynomial(int degree) {
-		var rand = new SecureRandom();
-		var poly = new ArrayList<BigInteger>();
-		var temp = new byte[prime.toByteArray().length];
+    private ArrayList<BigInteger> buildRandomPolynomial(int degree) {
+        var rand = new SecureRandom();
+        var poly = new ArrayList<BigInteger>();
+        var temp = new byte[prime.toByteArray().length];
 
-		for (int i = 0; i < degree; ++i) {
-			rand.nextBytes(temp);
-			var coef = new BigInteger(temp).mod(prime);
-			poly.add(coef);
-		}
+        for (int i = 0; i < degree; ++i) {
+            rand.nextBytes(temp);
+            var coef = new BigInteger(temp).mod(prime);
+            poly.add(coef);
+        }
 
-		return poly;
-	}
+        return poly;
+    }
 
-	private BigInteger evaluatePolynomial(ArrayList<BigInteger> poly, long x) {
-		return evaluatePolynomial(poly, BigInteger.valueOf(x));
-	}
+    private BigInteger evaluatePolynomial(ArrayList<BigInteger> poly, long x) {
+        return evaluatePolynomial(poly, BigInteger.valueOf(x));
+    }
 
-	private BigInteger evaluatePolynomial(ArrayList<BigInteger> poly, BigInteger x) {
-		var eval = BigInteger.ZERO;
-		var term = BigInteger.ONE;
+    private BigInteger evaluatePolynomial(ArrayList<BigInteger> poly, BigInteger x) {
+        var eval = BigInteger.ZERO;
+        var term = BigInteger.ONE;
 
-		for (int i = 0; i < poly.size(); ++i) {
-			var coef = poly.get(i);
-			term = term.multiply(x).mod(prime);
-			eval = eval.add(coef.multiply(term).mod(prime));
-		}
+        for (int i = 0; i < poly.size(); ++i) {
+            var coef = poly.get(i);
+            term = term.multiply(x).mod(prime);
+            eval = eval.add(coef.multiply(term).mod(prime));
+        }
 
-		return eval.mod(prime);
-	}
+        return eval.mod(prime);
+    }
 
-	public BigInteger reconstruct(HashMap<BigInteger, BigInteger> points) {
-		if (points.size() < minPieces) {
-			throw new IllegalArgumentException("not enough pieces");
-		}
+    public BigInteger reconstruct(HashMap<BigInteger, BigInteger> points) {
+        if (points.size() < minPieces) {
+            throw new IllegalArgumentException("not enough pieces");
+        }
 
-		var secret = BigInteger.ZERO;
+        var secret = BigInteger.ZERO;
 
-		var xs = points.keySet();
+        var xs = points.keySet();
 
-		for (var xj : xs) {
-			var yj = points.get(xj);
-			var term = evaluateInnerProduct(xs, xj);
-			term = yj.multiply(term);
-			secret = secret.add(term);
-		}
+        for (var xj : xs) {
+            var yj = points.get(xj);
+            var term = evaluateInnerProduct(xs, xj);
+            term = yj.multiply(term);
+            secret = secret.add(term);
+        }
 
-		return secret.mod(prime);
-	}
+        return secret.mod(prime);
+    }
 
-	private BigInteger evaluateInnerProduct(Set<BigInteger> xs, BigInteger xj) {
-		var prod = BigInteger.ONE;
+    private BigInteger evaluateInnerProduct(Set<BigInteger> xs, BigInteger xj) {
+        var prod = BigInteger.ONE;
 
-		for (var xm : xs) {
-			if (xm.equals(xj)) {
-				continue;
-			}
+        for (var xm : xs) {
+            if (xm.equals(xj)) {
+                continue;
+            }
 
-			var term = xm.multiply(xm.subtract(xj).modInverse(prime));
-			prod = prod.multiply(term).mod(prime);
-		}
+            var term = xm.multiply(xm.subtract(xj).modInverse(prime));
+            prod = prod.multiply(term).mod(prime);
+        }
 
-		return prod;
-	}
+        return prod;
+    }
 }
